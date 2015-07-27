@@ -1,0 +1,108 @@
+<html>
+<head>
+    <style>
+        body { background: #333; margin: 0; }
+        #entryText { color: white; position: absolute; left: 0; right: 0; top: 0; bottom: 0; margin: auto; transition: background-color .8s; -webkit-transition: background-color .8s; -moz-transition: background-color .8s; -ms-transition: background-color .8s; -o-transition: .8s; }
+        #entryText > span { position: absolute; left: 0; right: 0; margin: auto; opacity: 0; transition: opacity .8s; -webkit-transition: opacity .8s; -moz-transition: opacity .8s; -ms-transition: opacity .8s; -o-transition: opacity .8s; }
+        #entryText #welcome { opacity: 1; }
+        #entryText:hover { cursor: pointer; background-color: goldenrod; box-shadow: 0 0 10px #888; } #entryText:hover #welcome { opacity: 0; } #entryText:hover #enter { opacity: 1; }
+        #entryText #welcO { display: inline-block; } #entryText #welcO canvas {height: 100%; width: 100%; }
+    </style>
+    <script>
+        var page;
+
+        function init() {
+            if (!(page = getQueryVariable('page'))) {
+                spin(document.getElementById('welcO'));
+            } else {
+                document.body.remove(document.getElementById('entryText'));
+            }
+        }
+
+        function update() {
+            var entry = document.getElementById('entryText');
+            if (entry) {
+                var fontSize = window.innerHeight / 4;
+                entry.style.fontSize = entry.style.height = fontSize + "px";
+                entry.style.width = computeTextWidth('Welcme', fontSize, window.getComputedStyle(entry).fontFamily) + computeTextWidth('o', fontSize, window.getComputedStyle(entry).fontFamily) + "px";
+                entry.style.borderRadius = fontSize / 8 + "px";
+                document.getElementById('welcO').style.height = document.getElementById('welcO').style.width = computeTextWidth('o', fontSize, window.getComputedStyle(entry).fontFamily) + "px";
+                document.getElementById('enter').style.width = computeTextWidth('Enter', fontSize, window.getComputedStyle(entry).fontFamily) + "px";
+                //Draw O
+                var context = document.getElementById('welcO').querySelector('canvas').getContext('2d');
+                //console.log(Object.getOwnPropertyNames(entry);//.filter(function (p) {
+                    //return typeof Math[p] === 'function';
+                //}));
+                //alert(Object.getOwnPropertyNames(Math));
+                //alert(context.getImageData());
+                for (var property in context.canvas) {
+                    if (typeof context.canvas[property] != 'function') {
+                        console.log(property + context.canvas[property]);
+                    }
+                }
+                var lW = 6;
+                var cW = context.canvas.width; var cH = context.canvas.height;
+                var cF = .5 - (Math.tan(Math.PI / 8) / 2);
+                context.beginPath();
+                //Draw Octagon
+                context.moveTo(cW * cF, lW);
+                var coords = [[cW - (cW * cF), lW], [cW - lW, cH * cF], [cW - lW, cH - (cH * cF)], [cW - (cW * cF), cH - lW], [cW * cF, cH - lW], [lW, cH - (cH * cF)], [lW, cH * cF], [cW * cF, lW]];
+                for (var i = 0; i < coords.length; i++)
+                    context.lineTo(coords[i][0], coords[i][1]);
+                context.lineWidth = lW;
+                context.strokeStyle = '#fff';
+                context.stroke();
+                for (var i = 0; i < entry.children.length; i++)
+                    entry.children[i].style.top = (entry.children[i].offsetHeight - fontSize) / -2 + "px";
+            }
+        }
+
+        function spin(elment, axis, angle) {
+            axis = axis || 'rotateY';
+            angle = angle || 0;
+            elment.style.transform = axis + "(" + angle + "deg)";
+            window.setTimeout(function() {spin(elment, axis, (angle + 5) % 360)}, 20);
+        }
+
+        function getQueryVariable(variable) {
+            var query = window.location.search.substring(1);
+            var vars = query.split('&');
+            for (var i = 0; i < vars.length; i++) {
+                var pair = vars[i].split('=');
+                if (decodeURIComponent(pair[0]) == variable)
+                    return decodeURIComponent(pair[1]);
+            }
+            return '';
+        }
+
+        function computeTextWidth(str, fontSize, fontFamily) {
+            var text = document.createElement('span');
+            text.innerHTML = str; text.style.fontSize = fontSize + "px";
+            text.style.fontFamily = fontFamily || '';
+            document.body.appendChild(text);
+            var ret = text.offsetWidth;
+            document.body.removeChild(text);
+            return ret;
+        }
+
+        function getBaselineOffset(fontSize, fontFamily) {
+            var measure = document.createElement('div'); var letter = document.createElement('span'); var struct = document.createElement('span');
+            measure.style.height = fontSize + "px";
+            letter.innerHTML = 'T'; letter.style.fontSize = fontSize;
+            letter.style.fontFamily = fontFamily || '';
+            struct.style.display = 'inline';
+            measure.appendChild(letter); measure.appendChild(struct);
+            document.body.appendChild(measure);
+            var ret = (letter.offsetHeight - measure.offsetHeight) * 2;
+            document.body.removeChild(measure);
+            return ret;
+        }
+    </script>
+</head>
+<body onload="init(); update();" onresize="update();">
+    <div id="entryText">
+        <span id="welcome">Welc<span id="welcO"><canvas></canvas></span>me</span>
+        <span id="enter">Enter</span>
+    </div>
+</body>
+</html>
