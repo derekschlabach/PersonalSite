@@ -1,4 +1,4 @@
-<html>
+<!DOCTYPE html>
 <head>
     <style>
         body { background: #333; margin: 0; }
@@ -7,16 +7,20 @@
         #entryText #welcome { opacity: 1; }
         #entryText:hover { cursor: pointer; background-color: goldenrod; box-shadow: 0 0 10px #888; } #entryText:hover #welcome { opacity: 0; } #entryText:hover #enter { opacity: 1; }
         #entryText #welcO { display: inline-block; } #entryText #welcO canvas {height: 100%; width: 100%; }
+        #contentContainer { position: relative; background-color: white; height: 100%; width: 90%; margin: auto; display: none; }
     </style>
     <script>
-        var page;
+        var currPage;
 
         function init() {
-            if (!(page = getQueryVariable('page'))) {
-                spin(document.getElementById('welcO'));
-            } else {
-                document.body.remove(document.getElementById('entryText'));
-            }
+            var page = getQueryVariable('page');
+            var transitionPage = 'aboutme.html';
+
+            var transitionToContent = function() { document.body.removeChild(document.getElementById('entryText')); document.getElementById('contentContainer').style.display = 'block';};
+            var setUpEntry = function() { spin(document.getElementById('welcO')); document.getElementById('entryText').addEventListener('click', function() { loadPage(transitionPage, [transitionToContent], [function() {console.log('Broken link: \'' + transitionPage + '\''); document.getElementById('entryText').style.backgroundColor = 'maroon';}]);});};
+
+            if (!page) setUpEntry();
+            else loadPage(page, [transitionToContent], [setUpEntry]);
         }
 
         function update() {
@@ -30,16 +34,6 @@
                 document.getElementById('enter').style.width = computeTextWidth('Enter', fontSize, window.getComputedStyle(entry).fontFamily) + "px";
                 //Draw O
                 var context = document.getElementById('welcO').querySelector('canvas').getContext('2d');
-                //console.log(Object.getOwnPropertyNames(entry);//.filter(function (p) {
-                    //return typeof Math[p] === 'function';
-                //}));
-                //alert(Object.getOwnPropertyNames(Math));
-                //alert(context.getImageData());
-                for (var property in context.canvas) {
-                    if (typeof context.canvas[property] != 'function') {
-                        console.log(property + context.canvas[property]);
-                    }
-                }
                 var lW = 6;
                 var cW = context.canvas.width; var cH = context.canvas.height;
                 var cF = .5 - (Math.tan(Math.PI / 8) / 2);
@@ -55,6 +49,112 @@
                 for (var i = 0; i < entry.children.length; i++)
                     entry.children[i].style.top = (entry.children[i].offsetHeight - fontSize) / -2 + "px";
             }
+
+            document.getElementById('contentContainer').style.minHeight = window.innerHeight + "px";
+        }
+
+        /**
+         * loadPage
+         *
+         * @param page string - name of the file to be loaded
+         * @param ifSuccess func-array - functions to call if page is successfully loaded
+         * @param ifFailure func-array - functions to call if page fails to load
+         */
+        function loadPage(page, ifSuccess, ifFailure) {
+            var parseResponse = parsePage(page);
+            var intervalHandle = setInterval(function() {
+                if (parseResponse['ready']) {
+                    if (parseResponse['html']) {
+                        var removeResponse = removePageDisplay(currPage);
+                        currPage = page;
+                        var displayHandle = setInterval(function() {
+                            if (removeResponse['ready']) {
+                                displayNewPage(parseResponse['html']);
+                                for (var i = 0; i < ifSuccess.length; i++) {
+                                    if (typeof ifSuccess[i] == 'function') ifSuccess[i]();
+                                    else console.log('2nd parameter of \'loadPage\' is an array of functions');
+                                }
+                                clearInterval(displayHandle);
+                            }
+                        }, 4);
+                    } else {
+                        for (var i = 0; i < ifFailure.length; i++) {
+                            if (typeof ifFailure[i] == 'function') ifFailure[i]();
+                            else console.log('3nd parameter of \'loadPage\' is an array of functions');
+                        }
+                    }
+                    clearInterval(intervalHandle);
+                }
+            }, 4);
+        }
+
+        function removePageDisplay(page) {
+            var removeResponse = {ready: 0};
+
+            if (page != 'undefined') {
+                var elments = document.getElementsByClassName(page + "-specific");
+                for (var i = 0; i < elments.length; i++)
+                    elments[i].parentNode.removeChild(elments[i]);
+            }
+            document.getElementById('contentContainer').innerHTML = '';
+            removeResponse['ready'] = 1;
+
+            return removeResponse;
+        }
+
+        function displayNewPage(html) {
+            document.getElementById('contentContainer').innerHTML = html;
+        }
+
+        function parsePage(page) {
+            var responseHTML = {ready: 0, html: ''};
+            var xmlhttp = new XMLHttpRequest();
+            xmlhttp.onreadystatechange = function() {
+                if (xmlhttp.readyState==4 && xmlhttp.status==200)
+                {
+                    var pageHTML = xmlhttp.responseText;
+                    var bodyHTML;
+                    if (pageHTML.indexOf('<\head') == pageHTML.indexOf('<\body') == pageHTML.indexOf('<\html') == -1) bodyHTML = pageHTML;
+                    else if (pageHTML.indexOf('<body') != -1) {
+                        var bodyStart = pageHTML.indexOf('>', pageHTML.indexOf('<body')) + 1;
+                        bodyHTML = pageHTML.substr(bodyStart, pageHTML.indexOf('<\/body', bodyStart) - bodyStart);
+
+                        if (pageHTML.indexOf('<\head') != -1) {
+                            var headStart = pageHTML.indexOf('>', pageHTML.indexOf('<\head')) + 1;
+                            var headHTML = pageHTML.substr(headStart, pageHTML.indexOf('\<\/head', headStart) - headStart);
+                            while (headHTML.indexOf('<\style') != -1) {
+                                var styleStart = headHTML.indexOf('>', headHTML.indexOf('<\style')) + 1;
+                                var styleHTML = headHTML.substr(styleStart, headHTML.indexOf('<\/style', styleStart) - styleStart);
+                                headHTML = headHTML.substr(0, headHTML.indexOf('<\style')) + headHTML.substr(headHTML.indexOf('>', headHTML.indexOf('<\/style', styleStart)) + 1, headHTML.length);
+                                var style = document.createElement('style');
+                                style.innerHTML = styleHTML;
+                                style.classList.add(page + 'specific');
+                                document.head.appendChild(style);
+                            }
+                            while (headHTML.indexOf('<\script') != -1) {
+                                var scriptStart = headHTML.indexOf('>', headHTML.indexOf('<\script')) + 1;
+                                var scriptHTML = headHTML.substr(scriptStart, headHTML.indexOf("\<\/script", scriptStart) - scriptStart);
+                                headHTML = headHTML.substr(0, headHTML.indexOf('<\script')) + headHTML.substr(headHTML.indexOf('>', headHTML.indexOf('<\/script', scriptStart)) + 1, headHTML.length);
+                                var script = document.createElement('script');
+                                script.innerHTML = scriptHTML;
+                                script.classList.add(page + 'specific');
+                                document.head.appendChild(script);
+                            }
+                        }
+                    }
+
+                    if (bodyHTML) {
+                        responseHTML['ready'] = 1;
+                        responseHTML['html'] = bodyHTML;
+                    }
+                } else if (xmlhttp.readyState == 4 && xmlhttp.status == 404) {
+                    responseHTML['ready'] = 1;
+                    responseHTML['html'] = '';
+                }
+            };
+            xmlhttp.open("GET", page, true);
+            xmlhttp.send();
+            return responseHTML;
         }
 
         function spin(elment, axis, angle) {
@@ -85,7 +185,7 @@
             return ret;
         }
 
-        function getBaselineOffset(fontSize, fontFamily) {
+        /*function getBaselineOffset(fontSize, fontFamily) {
             var measure = document.createElement('div'); var letter = document.createElement('span'); var struct = document.createElement('span');
             measure.style.height = fontSize + "px";
             letter.innerHTML = 'T'; letter.style.fontSize = fontSize;
@@ -96,7 +196,7 @@
             var ret = (letter.offsetHeight - measure.offsetHeight) * 2;
             document.body.removeChild(measure);
             return ret;
-        }
+        }*/
     </script>
 </head>
 <body onload="init(); update();" onresize="update();">
@@ -104,5 +204,6 @@
         <span id="welcome">Welc<span id="welcO"><canvas></canvas></span>me</span>
         <span id="enter">Enter</span>
     </div>
+    <section id="contentContainer"></section>
 </body>
 </html>
