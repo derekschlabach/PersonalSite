@@ -26,7 +26,7 @@
         function update() {
             var entry = document.getElementById('entryText');
             if (entry) {
-                var fontSize = window.innerHeight / 4;
+                var fontSize = Math.max(window.innerHeight / 4);
                 entry.style.fontSize = entry.style.height = fontSize + "px";
                 entry.style.width = computeTextWidth('Welcme', fontSize, window.getComputedStyle(entry).fontFamily) + computeTextWidth('o', fontSize, window.getComputedStyle(entry).fontFamily) + "px";
                 entry.style.borderRadius = fontSize / 8 + "px";
@@ -69,6 +69,8 @@
                         currPage = page;
                         var displayHandle = setInterval(function() {
                             if (removeResponse['ready']) {
+                                for (var i = 0; i < parseResponse['headElments'].length; i++)
+                                    document.head.appendChild(parseResponse['headElments'][i]);
                                 displayNewPage(parseResponse['html']);
                                 for (var i = 0; i < ifSuccess.length; i++) {
                                     if (typeof ifSuccess[i] == 'function') ifSuccess[i]();
@@ -107,38 +109,41 @@
         }
 
         function parsePage(page) {
-            var responseHTML = {ready: 0, html: ''};
+            var responseHTML = {ready: 0, html: '', headElments: []};
             var xmlhttp = new XMLHttpRequest();
             xmlhttp.onreadystatechange = function() {
                 if (xmlhttp.readyState==4 && xmlhttp.status==200)
                 {
                     var pageHTML = xmlhttp.responseText;
                     var bodyHTML;
-                    if (pageHTML.indexOf('<\head') == pageHTML.indexOf('<\body') == pageHTML.indexOf('<\html') == -1) bodyHTML = pageHTML;
+                    if (pageHTML.indexOf('<head') == pageHTML.indexOf('<body') == pageHTML.indexOf('<html') == -1) bodyHTML = pageHTML;
                     else if (pageHTML.indexOf('<body') != -1) {
                         var bodyStart = pageHTML.indexOf('>', pageHTML.indexOf('<body')) + 1;
                         bodyHTML = pageHTML.substr(bodyStart, pageHTML.indexOf('<\/body', bodyStart) - bodyStart);
 
-                        if (pageHTML.indexOf('<\head') != -1) {
-                            var headStart = pageHTML.indexOf('>', pageHTML.indexOf('<\head')) + 1;
-                            var headHTML = pageHTML.substr(headStart, pageHTML.indexOf('\<\/head', headStart) - headStart);
-                            while (headHTML.indexOf('<\style') != -1) {
-                                var styleStart = headHTML.indexOf('>', headHTML.indexOf('<\style')) + 1;
-                                var styleHTML = headHTML.substr(styleStart, headHTML.indexOf('<\/style', styleStart) - styleStart);
-                                headHTML = headHTML.substr(0, headHTML.indexOf('<\style')) + headHTML.substr(headHTML.indexOf('>', headHTML.indexOf('<\/style', styleStart)) + 1, headHTML.length);
-                                var style = document.createElement('style');
-                                style.innerHTML = styleHTML;
-                                style.classList.add(page + 'specific');
-                                document.head.appendChild(style);
+                        if (pageHTML.indexOf('<head') != -1) {
+                            var headStart = pageHTML.indexOf('>', pageHTML.indexOf('<head')) + 1;
+                            var headHTML = pageHTML.substr(headStart, pageHTML.indexOf('<\/head', headStart) - headStart);
+                            while (headHTML.indexOf('<style') != -1) {
+                                var styleStart = headHTML.indexOf('>', headHTML.indexOf('<style')) + 1;
+                                var styleHTML = '';
+                                var selectors = (headHTML.substr(styleStart, headHTML.indexOf('<\/style', styleStart) - styleStart)).split('}');
+                                //Add a selector of #contentContainer before every selector
+                                if (selectors[selectors.length - 1].trim() == "") selectors = selectors.splice(0, selectors.length - 1);
+                                for (var i = 0; i < selectors.length; i++)
+                                    styleHTML += "\n#contentContainer " + (selectors[i] + '}').trim();
+                                styleHTML += "\n";
+                                //Remove this style from input head
+                                headHTML = headHTML.substr(0, headHTML.indexOf('<style')) + headHTML.substr(headHTML.indexOf('>', headHTML.indexOf('<\/style', styleStart)) + 1, headHTML.length);
+                                var style = document.createElement('style'); style.innerHTML = styleHTML; style.classList.add(page + 'specific');
+                                responseHTML['headElments'].push(style);
                             }
-                            while (headHTML.indexOf('<\script') != -1) {
+                            while (headHTML.indexOf('<script') != -1) {
                                 var scriptStart = headHTML.indexOf('>', headHTML.indexOf('<\script')) + 1;
-                                var scriptHTML = headHTML.substr(scriptStart, headHTML.indexOf("\<\/script", scriptStart) - scriptStart);
-                                headHTML = headHTML.substr(0, headHTML.indexOf('<\script')) + headHTML.substr(headHTML.indexOf('>', headHTML.indexOf('<\/script', scriptStart)) + 1, headHTML.length);
-                                var script = document.createElement('script');
-                                script.innerHTML = scriptHTML;
-                                script.classList.add(page + 'specific');
-                                document.head.appendChild(script);
+                                var scriptHTML = ('a' + headHTML.substr(scriptStart, headHTML.indexOf("\<\/script", scriptStart) - scriptStart)).trim().substr(1) + "\n";
+                                headHTML = headHTML.substr(0, headHTML.indexOf('<script')) + headHTML.substr(headHTML.indexOf('>', headHTML.indexOf('<\/script', scriptStart)) + 1, headHTML.length);
+                                var script = document.createElement('script'); script.innerHTML = scriptHTML; script.classList.add(page + 'specific');
+                                responseHTML['headElments'].push(script);
                             }
                         }
                     }
