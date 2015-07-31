@@ -10,6 +10,9 @@
         #contentContainer { position: relative; background-color: white; height: 100%; width: 90%; margin: auto; display: none; }
     </style>
     <script>
+        var brow = [];
+        brow['MutationObserver'] = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver || '';
+        brow['transform'] = (document.documentElement.style.transform != 'undefined') ? 'transform' : (document.documentElement.style.webkitTransform != 'undefined') ? 'webkitTransform' : (document.documentElement.style.mozTransform != 'undefined') ? 'mozTransform' : (document.documentElement.style.msTransform != 'undefined') ? 'msTransform' : (document.documentElement.style.oTransform != 'undefined') ? 'oTransform' : '';
         var currPage;
 
         function init() {
@@ -106,11 +109,19 @@
             var contentContainer = document.getElementById('contentContainer');
             var callback = function(mutations) { mutations.forEach(function(mutation) {
                 if (mutation.type == 'childList' && mutation.addedNodes.length > 0) {
+                    var nodes = [];
+                    for (var i = 0; i < mutation.addedNodes.length; i++) if (mutation.addedNodes.item(i).nodeType == 1) nodes.push(mutation.addedNodes.item(i));
+
                     var toDrop = [];
-                    for (var i = 0; i < mutation.addedNodes.length; i++) if (mutation.addedNodes.item(i).nodeType == 1) toDrop.push(mutation.addedNodes.item(i));
+                    nodes.forEach( function findDropElment(elment) {
+                        if (elment.classList.contains('dropOnLoad')) toDrop.push(elment);
+                        else if (elment.children.length > 0)
+                            for (var i = 0; i < elment.children.length; i++)
+                                findDropElment(elment.children[i]);
+                    });
                     dropFromTop(toDrop);
-                }});};
-            var observer = new MutationObserver(callback);
+                }}); this.disconnect();};
+            var observer = new brow['MutationObserver'](callback);
             observer.observe(contentContainer, {childList: true, subTree: true});
             contentContainer.innerHTML = html;
         }
@@ -120,23 +131,29 @@
                 // Inline elements do not get transformed, so they must be made inline-block for this
                 if (window.getComputedStyle(elment).display == 'inline') elment.style.display = 'inline-block';
                 var startHeight = pageOffsetTop(elment) + elment.offsetHeight + Math.floor(Math.random() * 100);
-                elment.style.transform = 'translateY(' + ( -1 * startHeight) + 'px)';
-                return {elment: elment, h: startHeight, v: 1, stopped: false};
+                elment.style[brow['transform']] = 'translateY(' + ( -1 * startHeight) + 'px)';
+                return {elment: elment, h: startHeight, v: 1,  stopped: false};
             });
-            eObj.forEach(function(elment) { console.log(elment);});
 
             // Number of Milliseconds between update
-            var interval = 100;
-            var counter = 0;
+            var interval = 10;
             var intervalHandle = setInterval(function() {
                 eObj.forEach(function(elmentObj) {
-                    var t = interval / 1000;
-                    var v = elmentObj['v'] + 9.81 * t;  // v = v0 + at
-                    var h = elmentObj['h'] - (v * v - elmentObj['v'] * elmentObj['v']) / (2 * 9.81); //x = (v2 - v02) / 2 a
-                    elmentObj['elment'].style.transform = 'translateY(' + (-1 * h) + 'px)';
-                    elmentObj['h'] = h; elmentObj['v'] = v;
-                    if (elmentObj['elment'].id == 'word') console.log(v);
+                    if (!elmentObj['stopped']) {
+                        var t = interval / 1000;
+                        var v = elmentObj['v'] + 10 * 9.81 * t;  // v = v0 + at
+                        var h = elmentObj['h'] - (v * v - elmentObj['v'] * elmentObj['v']) / (2 * 9.81); // x = (v2 - v02) / 2 a
+                        if (h <= 0) {
+                            if (elmentObj['v'] < 1 && elmentObj['v'] >= 0) { elmentObj['stopped'] = true; elmentObj['elment'].style.display = ''; }
+                            else v = v / -1.5;
+                        }
+                        elmentObj['elment'].style[brow['transform']] = (elmentObj['stopped']) ? '' : 'translateY(' + (-1 * h) + 'px)';
+                        elmentObj['h'] = h; elmentObj['v'] = v;
+                    }
                 });
+                var animationDone = true;
+                for (var i = 0; i < eObj.length; i++) if (!eObj[i]['stopped']) animationDone = false;
+                if (animationDone) clearInterval(intervalHandle);
             }, interval);
         }
 
@@ -203,7 +220,7 @@
         function spin(elment, axis, angle) {
             axis = axis || 'rotateY';
             angle = angle || 0;
-            elment.style.transform = axis + "(" + angle + "deg)";
+            elment.style[brow['transform']] = axis + "(" + angle + "deg)";
             window.setTimeout(function() {spin(elment, axis, (angle + 5) % 360)}, 20);
         }
 

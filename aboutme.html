@@ -4,14 +4,14 @@
         #anteater { font-size: 180px; }
         #word {background-color: red;}
         .jon { ddd; }
-        #from {position: absolute; right: 0; top: 0; width: 20%; background: blue; }
-        .wjo { add; }
+        #from {position: absolute; right: 0; top: 0; width: 20%; background: lightblue; }
+        #footer { position: absolute; bottom: 0; background-color: yellow; }
     </style>
     <style>
         #newStyle {ab;}
     </style>
     <script>
-        document.getElementById('from').style.height = window.offsetHeight;
+        //document.getElementById('from').style.height = window.innerHeight + "px";
 
         function test() {
             document.getElementById('anteater').style.display = 'inline-block';
@@ -22,7 +22,8 @@
 <body onload="load()">
         <span id="anteater" class="dropOnLoad">Anteater</span>
         <span onclick="test()" class="dropOnLoad">Word</span>
-        <div id="word" onclick="document.getElementsByTagName('span')[1].click();" class="dropOnLoad">Wordless</div>
+        <div id="word" onclick="document.getElementsByTagName('span')[1].click();">Wordlessly</div>
         <div id="from"><div id="con" class="dropOnLoad">Con</div></div>
+        <div id="footer" class="dropOnLoad">Words</div>
 </body>
 </html>
