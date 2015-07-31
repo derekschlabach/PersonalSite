@@ -26,26 +26,23 @@
         function update() {
             var entry = document.getElementById('entryText');
             if (entry) {
-                var fontSize = Math.max(window.innerHeight / 4);
+                var fontSize = Math.min(window.innerHeight / 4, window.innerWidth / 8);
                 entry.style.fontSize = entry.style.height = fontSize + "px";
                 entry.style.width = computeTextWidth('Welcme', fontSize, window.getComputedStyle(entry).fontFamily) + computeTextWidth('o', fontSize, window.getComputedStyle(entry).fontFamily) + "px";
                 entry.style.borderRadius = fontSize / 8 + "px";
                 document.getElementById('welcO').style.height = document.getElementById('welcO').style.width = computeTextWidth('o', fontSize, window.getComputedStyle(entry).fontFamily) + "px";
                 document.getElementById('enter').style.width = computeTextWidth('Enter', fontSize, window.getComputedStyle(entry).fontFamily) + "px";
-                //Draw O
-                var context = document.getElementById('welcO').querySelector('canvas').getContext('2d');
-                var lW = 6;
-                var cW = context.canvas.width; var cH = context.canvas.height;
-                var cF = .5 - (Math.tan(Math.PI / 8) / 2);
-                context.beginPath();
+
                 //Draw Octagon
-                context.moveTo(cW * cF, lW);
+                var context = document.getElementById('welcO').querySelector('canvas').getContext('2d');
+                var lW = 6; var cW = context.canvas.width; var cH = context.canvas.height; var cF = .5 - (Math.tan(Math.PI / 8) / 2);
+                context.beginPath(); context.moveTo(cW * cF, lW);
                 var coords = [[cW - (cW * cF), lW], [cW - lW, cH * cF], [cW - lW, cH - (cH * cF)], [cW - (cW * cF), cH - lW], [cW * cF, cH - lW], [lW, cH - (cH * cF)], [lW, cH * cF], [cW * cF, lW]];
                 for (var i = 0; i < coords.length; i++)
                     context.lineTo(coords[i][0], coords[i][1]);
-                context.lineWidth = lW;
-                context.strokeStyle = '#fff';
+                context.lineWidth = lW; context.strokeStyle = '#fff';
                 context.stroke();
+
                 for (var i = 0; i < entry.children.length; i++)
                     entry.children[i].style.top = (entry.children[i].offsetHeight - fontSize) / -2 + "px";
             }
@@ -101,11 +98,52 @@
             document.getElementById('contentContainer').innerHTML = '';
             removeResponse['ready'] = 1;
 
+
             return removeResponse;
         }
 
         function displayNewPage(html) {
-            document.getElementById('contentContainer').innerHTML = html;
+            var contentContainer = document.getElementById('contentContainer');
+            var callback = function(mutations) { mutations.forEach(function(mutation) {
+                if (mutation.type == 'childList' && mutation.addedNodes.length > 0) {
+                    var toDrop = [];
+                    for (var i = 0; i < mutation.addedNodes.length; i++) if (mutation.addedNodes.item(i).nodeType == 1) toDrop.push(mutation.addedNodes.item(i));
+                    dropFromTop(toDrop);
+                }});};
+            var observer = new MutationObserver(callback);
+            observer.observe(contentContainer, {childList: true, subTree: true});
+            contentContainer.innerHTML = html;
+        }
+
+        function dropFromTop(elments) {
+            var eObj = elments.map(function(elment) {
+                // Inline elements do not get transformed, so they must be made inline-block for this
+                if (window.getComputedStyle(elment).display == 'inline') elment.style.display = 'inline-block';
+                var startHeight = pageOffsetTop(elment) + elment.offsetHeight + Math.floor(Math.random() * 100);
+                elment.style.transform = 'translateY(' + ( -1 * startHeight) + 'px)';
+                return {elment: elment, h: startHeight, v: 1, stopped: false};
+            });
+            eObj.forEach(function(elment) { console.log(elment);});
+
+            // Number of Milliseconds between update
+            var interval = 100;
+            var counter = 0;
+            var intervalHandle = setInterval(function() {
+                eObj.forEach(function(elmentObj) {
+                    var t = interval / 1000;
+                    var v = elmentObj['v'] + 9.81 * t;  // v = v0 + at
+                    var h = elmentObj['h'] - (v * v - elmentObj['v'] * elmentObj['v']) / (2 * 9.81); //x = (v2 - v02) / 2 a
+                    elmentObj['elment'].style.transform = 'translateY(' + (-1 * h) + 'px)';
+                    elmentObj['h'] = h; elmentObj['v'] = v;
+                    if (elmentObj['elment'].id == 'word') console.log(v);
+                });
+            }, interval);
+        }
+
+        // Returns number of pixels between an element and the top of the page
+        function pageOffsetTop(element) {
+            var pageOffsetTopHelper = function(elment) { return ((window.getComputedStyle(elment).position == 'static') ? 0 : elment.offsetTop + parseInt(window.getComputedStyle(elment).borderTopWidth)) + ((elment == document.body) ? 0 : pageOffsetTopHelper(elment.parentNode)); }
+            return pageOffsetTopHelper(element.parentNode) + element.offsetTop;
         }
 
         function parsePage(page) {
