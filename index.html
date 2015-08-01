@@ -145,7 +145,7 @@
                         var h = elmentObj['h'] - (v * v - elmentObj['v'] * elmentObj['v']) / (2 * 9.81); // x = (v2 - v02) / 2 a
                         if (h <= 0) {
                             if (elmentObj['v'] < 1 && elmentObj['v'] >= 0) { elmentObj['stopped'] = true; elmentObj['elment'].style.display = ''; }
-                            else v = v / -1.5;
+                            else { v = v / -2; h = 0; }
                         }
                         elmentObj['elment'].style[brow['transform']] = (elmentObj['stopped']) ? '' : 'translateY(' + (-1 * h) + 'px)';
                         elmentObj['h'] = h; elmentObj['v'] = v;
