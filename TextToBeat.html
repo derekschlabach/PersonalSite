@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        html { background: #222; color: #3f3; }
+        #input > input[type="text"] { margin: auto; display: block; background: #333; border: none; width: 400px; font-size: 100px; outline: none; color: #3f3; }
+        #pulse { background: #3f3; height: 100px; width: 200px; position: absolute; left: 0; right: 0; bottom: 40px; margin: auto; display: none; }
+    </style>
+    <script>
+        var text;
+        function go() {
+            text = document.getElementById('textInput').value;
+            var binStr = '';
+            for (var i = 0; i < text.length; i++)
+                binStr += char2BinStr(text[i]) + ' ';
+            //document.getElementById('echo').innerHTML = binStr;
+            var index = 0;
+            var intervalHand = setInterval(function() {
+                if (binStr[++index] == '1')
+                    document.getElementById('pulse').style.display = 'block';
+                else
+                    document.getElementById('pulse').style.display = 'none';
+                if (index >= binStr.length)
+                    clearInterval(intervalHand);
+            }, 300);
+        }
+
+        // PreReq: 0 <= num <= 255
+        // Return val: 8-bit string representation
+        function char2BinStr(char) {
+            var num = char.charCodeAt(0);
+            var binString = '';
+            while (num > 0) {
+                binString = num % 2 + binString;
+                num = (num - (num % 2)) / 2;
+            }
+            return "00000000".substr(0, 8 - binString.length) + binString;
+        }
+    </script>
+</head>
+    <form id="input" onsubmit="go();">
+        <input type="text" id="textInput">
+        <input type="submit">
+    </form>
+    <div id="echo"></div>
+    <div id="pulse"></div>
+</body>
+</html>
