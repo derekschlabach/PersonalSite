@@ -3,7 +3,7 @@
 <head>
     <style>
         html { background: #222; color: #3f3; font-family: monaco, Consolas, 'Lucida Console', monospace; }
-        #input > input[type="text"] { margin: auto; display: block; background: #333; border: none; width: 400px; font-size: 100px; outline: none; color: transparent; text-shadow: 0 0 0 #3f3; }
+        #input > input[type="text"] { margin: auto; display: block; background: #333; border: none; width: 400px; font-size: 100px; outline: none; color: #3f3; text-shadow: 0 0 0 #3f3; }
         #pulse { background: #3f3; height: 100px; width: 200px; position: absolute; left: 0; right: 0; bottom: 40px; margin: auto; display: none; }
     </style>
     <script>
@@ -122,7 +122,7 @@
 </head>
 <body>
     <form id="input" onsubmit="go();">
-        <input type="text" id="textInput" onblur="var elment = this; setTimeout(function() {elment.focus();}, 0);" autofocus="autofocus" autocomplete="off" value="a">
+        <input type="text" id="textInput" onblur="var elment = this; setTimeout(function() {elment.focus();}, 0);" autofocus="autofocus" autocomplete="off">
         <input type="submit">
     </form>
     <div id="echo"></div>
