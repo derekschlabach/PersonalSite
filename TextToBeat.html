@@ -2,140 +2,19 @@
 <html>
 <head>
     <style>
-        html { background: #222; color: #3f3; font-family: monaco, Consolas, 'Lucida Console', monospace; }
-        #input > input[type="text"] { margin: auto; display: block; background: #333; border: none; width: 400px; font-size: 100px; outline: none; color: #3f3; text-shadow: 0 0 0 #3f3; }
-        #pulse { background: #3f3; height: 100px; width: 200px; position: absolute; left: 0; right: 0; bottom: 40px; margin: auto; display: none; }
+        html {
+            background: #222; color: #3f3;
+            font-family: monaco, Consolas, 'Lucida Console', monospace;
+        }
+        #textInput {
+            margin: auto; display: block; border: none;
+            background: #333; text-align: center;
+            width: 400px; font-size: 100px; outline: none; color: #3f3;
+        }
     </style>
-    <script>
-        var mp3Tracks = { bb : 'Assets/BeatBox/Bb.mp3', ck : 'Assets/BeatBox/Ck.mp3', pbf : 'Assets/BeatBox/Pbf.mp3', ts : 'Assets/BeatBox/Ts.mp3'};
-        var instruments, rhythms;
-        var metronome = new function() {
-            this.audioTracks = [];
-            this.playingQueue = [];
-            this.running = false;
-            this.tempo = 128;
-            this.beat = this.note = 0;
-            this.intervalHandle = null;
-
-            this.playTrack = function(audioTrack) {
-                var newAudioTrack = true;
-                for (var i in this.audioTracks)
-                    if (this.audioTracks[i] === audioTrack) newAudioTrack = false;
-
-                if (newAudioTrack) this.audioTracks.push(audioTrack);
-                this.playingQueue.push(audioTrack);
-                if (!this.running) this.start();
-            };
-
-            this.stop = function() {
-                this.running = false;
-                this.beat = this.note = 0;
-                if (this.intervalHandle) clearInterval(this.intervalHandle);
-            };
-
-            this.start = function() {
-                if (this.intervalHandle) clearInterval(this.intervalHandle);
-                this.intervalHandle = setInterval(function() {metronome.run();}, 15000 / this.tempo);
-            };
-
-            this.changeTempo = function(newTempo) {
-                this.tempo = newTempo;
-                this.start();
-            };
-
-            this.run = function() {
-                if (this.beat === 0 && this.note === 0)
-                    while (this.playingQueue.length > 0)
-                        this.playingQueue.pop().play();
-
-                var trackPlaying = false;
-                for (var i = 0; i < this.audioTracks.length; i++)
-                    if (this.audioTracks[i].isPlaying()) {
-                        trackPlaying = true;
-                        this.audioTracks[i].playNote(this.beat, this.note);
-                    }
-
-                if (!trackPlaying) this.stop();
-                else {
-                    this.note = (this.note + 1) % 4;
-                    if (this.note === 0) {
-                        this.beat = (this.beat + 1) % 4;
-                        if (this.beat === 0)
-                            this.audioTracks.forEach(function (audioTrack) { if (audioTrack.isPlaying()) audioTrack.incrementMeasure(); });
-                    }
-                }
-            }
-        };
-
-
-        function go() {
-            var text = document.getElementById('textInput').value;
-            metronome.playTrack(new AudioTrack(text, true));
-        }
-
-        function AudioTrack(text, looping) {
-            this.instruments = [];
-            this.rhythms = [];
-            for (var i = 0; i < text.length; i++) {
-                this.instruments.push(instruments[getInstrumentIndex(text[i])]);
-                this.rhythms.push(rhythms[getRhythmIndex(text[i])]);
-            }
-            console.log(this.instruments.join());
-            this.tracks = { bb : document.createElement('audio'), ck : document.createElement('audio'),
-                            pbf : document.createElement('audio'), ts : document.createElement('audio')};
-            for (var key in this.tracks) if (this.tracks.hasOwnProperty(key)) {
-                var tmpSource = document.createElement('source');
-                tmpSource.type = 'audio/mpeg'; tmpSource.src = mp3Tracks[key];
-                this.tracks[key].appendChild(tmpSource);
-            }
-            this.playingTrack = null;
-            this.measure = 0;
-            this.looping = looping || false;
-            this.playing = false;
-
-            this.playNote = function(beat, note) {
-                var trackNum = parseInt(this.rhythms[this.measure][beat].substr(note, 1));
-                console.log(trackNum);
-                if (trackNum) {
-                    if (this.playingTrack) {
-                        this.playingTrack.pause();
-                        this.playingTrack.currentTime = 0;
-                    }
-                    this.playingTrack = this.tracks[this.instruments[this.measure][trackNum - 1]];
-                    this.playingTrack.play();
-                }
-            };
-
-            this.isPlaying = function() { return this.playing; };
-            this.play = function() { this.playing = true; };
-            this.stop = function() { this.playing = false; this.measure = 0; };
-
-            this.incrementMeasure = function() {
-                this.measure = (this.measure + 1) % this.rhythms.length;
-                if (this.measure == 0 && !this.looping) this.stop();
-            };
-        }
-
-        function getInstrumentIndex(char) { return ((char.charCodeAt(0) & 0x78) >> 3) - 4; }
-        function getRhythmIndex(char) { return 0;}//char.charCodeAt(0) & 0x7; }
-    </script>
 </head>
 <body>
-    <form id="input" onsubmit="go();">
-        <input type="text" id="textInput" onblur="var elment = this; setTimeout(function() {elment.focus();}, 0);" autofocus="autofocus" autocomplete="off">
-        <input type="submit">
-    </form>
-    <div id="echo"></div>
-    <div id="timing"></div>
-    <div id="pulse"></div>
+    <input type="text" id="textInput" autofocus="autofocus" autocomplete="off">
 </body>
-<script>
-    instruments = [
-            ['ts', 'ts', 'ck'], ['bb', 'bb', 'bb'], ['pbf', 'ts', 'ck'], ['bb', 'ts', 'pbf'],
-            ['ck', 'ck', 'pbf'], ['pbf', 'ts', 'ck'], ['bb', 'bb', 'ts'], ['pbf', 'pbf', 'ts'],
-            ['bb', 'bb', 'pbf'], ['bb', 'bb', 'ck'], ['bb', 'ts', 'ck'], ['pbf', 'pbf', 'ck']
-    ];
-
-    rhythms = [['1020', '3020', '1120', '3020']];
-</script>
+<script type="text/javascript" src="TextToBeat.js"></script>
 </html>
