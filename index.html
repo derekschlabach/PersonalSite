@@ -2,6 +2,7 @@
 <head>
     <style>
         body { background: #333; margin: 0; }
+        header { width: 100%; box-sizing: border-box; border-bottom: solid #111; background-color: #345678; } #tabs { margin: auto; list-style-type: none; padding: 0; height: 100%; } #tabs li { float: left; }
         #entryText { color: white; position: absolute; left: 0; right: 0; top: 0; bottom: 0; margin: auto; transition: background-color .8s; -webkit-transition: background-color .8s; -moz-transition: background-color .8s; -ms-transition: background-color .8s; -o-transition: .8s; }
         #entryText > span { position: absolute; left: 0; right: 0; margin: auto; opacity: 0; transition: opacity .8s; -webkit-transition: opacity .8s; -moz-transition: opacity .8s; -ms-transition: opacity .8s; -o-transition: opacity .8s; }
         #entryText #welcome { opacity: 1; }
@@ -13,17 +14,17 @@
         var brow = [];
         brow['MutationObserver'] = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver || '';
         brow['transform'] = (document.documentElement.style.transform != 'undefined') ? 'transform' : (document.documentElement.style.webkitTransform != 'undefined') ? 'webkitTransform' : (document.documentElement.style.mozTransform != 'undefined') ? 'mozTransform' : (document.documentElement.style.msTransform != 'undefined') ? 'msTransform' : (document.documentElement.style.oTransform != 'undefined') ? 'oTransform' : '';
+        var anchorList = { '#Test' : 'test.html', '#AboutMe' : 'aboutme.html', '#Portfolio' : 'portfolio.html', '#HireMe' : 'hireme.html'};
         var currPage;
 
         function init() {
-            var page = getQueryVariable('page');
-            var transitionPage = 'aboutme.html';
-
+            var anchor = document.location.hash;
+            var transitionPage = '#AboutMe';
             var transitionToContent = function() { document.body.removeChild(document.getElementById('entryText')); document.getElementById('contentContainer').style.display = 'block';};
             var setUpEntry = function() { spin(document.getElementById('welcO')); document.getElementById('entryText').addEventListener('click', function() { loadPage(transitionPage, [transitionToContent], [function() {console.log('Broken link: \'' + transitionPage + '\''); document.getElementById('entryText').style.backgroundColor = 'maroon';}]);});};
 
-            if (!page) setUpEntry();
-            else loadPage(page, [transitionToContent], [setUpEntry]);
+            if (!anchor) setUpEntry();
+            else loadPage(anchor, [transitionToContent], [setUpEntry]);
         }
 
         function update() {
@@ -50,17 +51,28 @@
                     entry.children[i].style.top = (entry.children[i].offsetHeight - fontSize) / -2 + "px";
             }
 
+            var header = document.getElementsByTagName('header')[0];
+            if (header) {
+                header.style.height = window.innerHeight * .12 + "px";
+                header.style.borderWidth = (window.innerHeight * .12) * .06 + "px";
+            
+                var tabs = header.querySelector('#tabs');
+                var tabsWidth = 0;
+                for (var i = 0; i < tabs.children.length; i++) tabsWidth += 1 + parseInt(window.getComputedStyle(tabs.children.item(i)).marginLeft) + tabs.children.item(i).offsetWidth + parseInt(window.getComputedStyle(tabs.children.item(i)).marginRight);
+                tabs.style.width = tabsWidth + "px";
+            }
             document.getElementById('contentContainer').style.minHeight = window.innerHeight + "px";
         }
 
         /**
          * loadPage
          *
-         * @param page string - name of the file to be loaded
+         * @param anchor string - anchor linking to the name of the file to be loaded
          * @param ifSuccess func-array - functions to call if page is successfully loaded
          * @param ifFailure func-array - functions to call if page fails to load
          */
-        function loadPage(page, ifSuccess, ifFailure) {
+        function loadPage(anchor, ifSuccess, ifFailure) {
+            var page = anchorList[anchor] || '';
             var parseResponse = parsePage(page);
             var intervalHandle = setInterval(function() {
                 if (parseResponse['ready']) {
@@ -72,6 +84,7 @@
                                 for (var i = 0; i < parseResponse['headElments'].length; i++)
                                     document.head.appendChild(parseResponse['headElments'][i]);
                                 displayNewPage(parseResponse['html']);
+                                document.location.hash = anchor;
                                 for (var i = 0; i < ifSuccess.length; i++) {
                                     if (typeof ifSuccess[i] == 'function') ifSuccess[i]();
                                     else console.log('2nd parameter of \'loadPage\' is an array of functions');
@@ -167,8 +180,7 @@
             var responseHTML = {ready: 0, html: '', headElments: []};
             var xmlhttp = new XMLHttpRequest();
             xmlhttp.onreadystatechange = function() {
-                if (xmlhttp.readyState==4 && xmlhttp.status==200)
-                {
+                if (xmlhttp.readyState==4 && xmlhttp.status==200) {
                     var pageHTML = xmlhttp.responseText;
                     var bodyHTML;
                     if (pageHTML.indexOf('<head') == pageHTML.indexOf('<body') == pageHTML.indexOf('<html') == -1) bodyHTML = pageHTML;
@@ -260,6 +272,13 @@
     </script>
 </head>
 <body onload="init(); update();" onresize="update();">
+    <!--<header>
+        <ul id="tabs">
+            <li><button id="aboutMe" onclick="loadPage('#AboutMe');">About Me</button></li>
+            <li><button id="portfolio" onclick="loadPage('#Portfolio');">Portfolio</button></li>
+            <li><button id="hireMe" onclick="loadPage('#HireMe');">Hire Me</button></li>
+        </ul>
+    </header>-->
     <div id="entryText">
         <span id="welcome">Welc<span id="welcO"><canvas></canvas></span>me</span>
         <span id="enter">Enter</span>
