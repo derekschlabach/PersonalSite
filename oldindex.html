@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<head>
+    <style>
+        body { background: #333; margin: 0; }
+        header { width: 100%; box-sizing: border-box; border-bottom: solid #111; background-color: #345678; } #tabs { margin: auto; list-style-type: none; padding: 0; height: 100%; } #tabs li { float: left; }
+        #entryText { color: white; position: absolute; left: 0; right: 0; top: 0; bottom: 0; margin: auto; transition: background-color .8s; -webkit-transition: background-color .8s; -moz-transition: background-color .8s; -ms-transition: background-color .8s; -o-transition: .8s; }
+        #entryText > span { position: absolute; left: 0; right: 0; margin: auto; opacity: 0; transition: opacity .8s; -webkit-transition: opacity .8s; -moz-transition: opacity .8s; -ms-transition: opacity .8s; -o-transition: opacity .8s; }
+        #entryText #welcome { opacity: 1; }
+        #entryText:hover { cursor: pointer; background-color: goldenrod; box-shadow: 0 0 10px #888; } #entryText:hover #welcome { opacity: 0; } #entryText:hover #enter { opacity: 1; }
+        #entryText #welcO { display: inline-block; } #entryText #welcO canvas {height: 100%; width: 100%; }
+        #contentContainer { position: relative; background-color: white; height: 100%; width: 90%; margin: auto; display: none; }
+    </style>
+    <script>
+        var brow = [];
+        brow['MutationObserver'] = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver || '';
+        brow['transform'] = (document.documentElement.style.transform != 'undefined') ? 'transform' : (document.documentElement.style.webkitTransform != 'undefined') ? 'webkitTransform' : (document.documentElement.style.mozTransform != 'undefined') ? 'mozTransform' : (document.documentElement.style.msTransform != 'undefined') ? 'msTransform' : (document.documentElement.style.oTransform != 'undefined') ? 'oTransform' : '';
+        var anchorList = { '#Test' : 'test.html', '#AboutMe' : 'aboutme.html', '#Portfolio' : 'portfolio.html', '#HireMe' : 'hireme.html'};
+        var currPage;
+
+        function init() {
+            var anchor = document.location.hash;
+            var transitionPage = '#AboutMe';
+            var transitionToContent = function() { document.body.removeChild(document.getElementById('entryText')); document.getElementById('contentContainer').style.display = 'block';};
+            var setUpEntry = function() { spin(document.getElementById('welcO')); document.getElementById('entryText').addEventListener('click', function() { loadPage(transitionPage, [transitionToContent], [function() {console.log('Broken link: \'' + transitionPage + '\''); document.getElementById('entryText').style.backgroundColor = 'maroon';}]);});};
+
+            if (!anchor) setUpEntry();
+            else loadPage(anchor, [transitionToContent], [setUpEntry]);
+        }
+
+        function update() {
+            var entry = document.getElementById('entryText');
+            if (entry) {
+                var fontSize = Math.min(window.innerHeight / 4, window.innerWidth / 8);
+                entry.style.fontSize = entry.style.height = fontSize + "px";
+                entry.style.width = computeTextWidth('Welcme', fontSize, window.getComputedStyle(entry).fontFamily) + computeTextWidth('o', fontSize, window.getComputedStyle(entry).fontFamily) + "px";
+                entry.style.borderRadius = fontSize / 8 + "px";
+                document.getElementById('welcO').style.height = document.getElementById('welcO').style.width = computeTextWidth('o', fontSize, window.getComputedStyle(entry).fontFamily) + "px";
+                document.getElementById('enter').style.width = computeTextWidth('Enter', fontSize, window.getComputedStyle(entry).fontFamily) + "px";
+
+                //Draw Octagon
+                var context = document.getElementById('welcO').querySelector('canvas').getContext('2d');
+                var lW = 6; var cW = context.canvas.width; var cH = context.canvas.height; var cF = .5 - (Math.tan(Math.PI / 8) / 2);
+                context.beginPath(); context.moveTo(cW * cF, lW);
+                var coords = [[cW - (cW * cF), lW], [cW - lW, cH * cF], [cW - lW, cH - (cH * cF)], [cW - (cW * cF), cH - lW], [cW * cF, cH - lW], [lW, cH - (cH * cF)], [lW, cH * cF], [cW * cF, lW]];
+                for (var i = 0; i < coords.length; i++)
+                    context.lineTo(coords[i][0], coords[i][1]);
+                context.lineWidth = lW; context.strokeStyle = '#fff';
+                context.stroke();
+
+                for (var i = 0; i < entry.children.length; i++)
+                    entry.children[i].style.top = (entry.children[i].offsetHeight - fontSize) / -2 + "px";
+            }
+
+            var header = document.getElementsByTagName('header')[0];
+            if (header) {
+                header.style.height = window.innerHeight * .12 + "px";
+                header.style.borderWidth = (window.innerHeight * .12) * .06 + "px";
+            
+                var tabs = header.querySelector('#tabs');
+                var tabsWidth = 0;
+                for (var i = 0; i < tabs.children.length; i++) tabsWidth += 1 + parseInt(window.getComputedStyle(tabs.children.item(i)).marginLeft) + tabs.children.item(i).offsetWidth + parseInt(window.getComputedStyle(tabs.children.item(i)).marginRight);
+                tabs.style.width = tabsWidth + "px";
+            }
+            document.getElementById('contentContainer').style.minHeight = window.innerHeight + "px";
+        }
+
+        /**
+         * loadPage
+         *
+         * @param anchor string - anchor linking to the name of the file to be loaded
+         * @param ifSuccess func-array - functions to call if page is successfully loaded
+         * @param ifFailure func-array - functions to call if page fails to load
+         */
+        function loadPage(anchor, ifSuccess, ifFailure) {
+            var page = anchorList[anchor] || '';
+            var parseResponse = parsePage(page);
+            var intervalHandle = setInterval(function() {
+                if (parseResponse['ready']) {
+                    if (parseResponse['html']) {
+                        var removeResponse = removePageDisplay(currPage);
+                        currPage = page;
+                        var displayHandle = setInterval(function() {
+                            if (removeResponse['ready']) {
+                                for (var i = 0; i < parseResponse['headElments'].length; i++)
+                                    document.head.appendChild(parseResponse['headElments'][i]);
+                                displayNewPage(parseResponse['html']);
+                                document.location.hash = anchor;
+                                for (var i = 0; i < ifSuccess.length; i++) {
+                                    if (typeof ifSuccess[i] == 'function') ifSuccess[i]();
+                                    else console.log('2nd parameter of \'loadPage\' is an array of functions');
+                                }
+                                clearInterval(displayHandle);
+                            }
+                        }, 4);
+                    } else {
+                        for (var i = 0; i < ifFailure.length; i++) {
+                            if (typeof ifFailure[i] == 'function') ifFailure[i]();
+                            else console.log('3nd parameter of \'loadPage\' is an array of functions');
+                        }
+                    }
+                    clearInterval(intervalHandle);
+                }
+            }, 4);
+        }
+
+        function removePageDisplay(page) {
+            var removeResponse = {ready: 0};
+
+            if (page != 'undefined') {
+                var elments = document.getElementsByClassName(page + "-specific");
+                for (var i = 0; i < elments.length; i++)
+                    elments[i].parentNode.removeChild(elments[i]);
+            }
+            document.getElementById('contentContainer').innerHTML = '';
+            removeResponse['ready'] = 1;
+
+
+            return removeResponse;
+        }
+
+        function displayNewPage(html) {
+            var contentContainer = document.getElementById('contentContainer');
+            var callback = function(mutations) { mutations.forEach(function(mutation) {
+                if (mutation.type == 'childList' && mutation.addedNodes.length > 0) {
+                    var nodes = [];
+                    for (var i = 0; i < mutation.addedNodes.length; i++) if (mutation.addedNodes.item(i).nodeType == 1) nodes.push(mutation.addedNodes.item(i));
+
+                    var toDrop = [];
+                    nodes.forEach( function findDropElment(elment) {
+                        if (elment.classList.contains('dropOnLoad')) toDrop.push(elment);
+                        else if (elment.children.length > 0)
+                            for (var i = 0; i < elment.children.length; i++)
+                                findDropElment(elment.children[i]);
+                    });
+                    dropFromTop(toDrop);
+                }}); this.disconnect();};
+            var observer = new brow['MutationObserver'](callback);
+            observer.observe(contentContainer, {childList: true, subTree: true});
+            contentContainer.innerHTML = html;
+        }
+
+        function dropFromTop(elments) {
+            var eObj = elments.map(function(elment) {
+                // Inline elements do not get transformed, so they must be made inline-block for this
+                if (window.getComputedStyle(elment).display == 'inline') elment.style.display = 'inline-block';
+                var startHeight = pageOffsetTop(elment) + elment.offsetHeight + Math.floor(Math.random() * 100);
+                elment.style[brow['transform']] = 'translateY(' + ( -1 * startHeight) + 'px)';
+                return {elment: elment, h: startHeight, v: 1,  stopped: false};
+            });
+
+            // Number of Milliseconds between update
+            var interval = 10;
+            var intervalHandle = setInterval(function() {
+                eObj.forEach(function(elmentObj) {
+                    if (!elmentObj['stopped']) {
+                        var t = interval / 1000;
+                        var v = elmentObj['v'] + 10 * 9.81 * t;  // v = v0 + at
+                        var h = elmentObj['h'] - (v * v - elmentObj['v'] * elmentObj['v']) / (2 * 9.81); // x = (v2 - v02) / 2 a
+                        if (h <= 0) {
+                            if (elmentObj['v'] < 1 && elmentObj['v'] >= 0) { elmentObj['stopped'] = true; elmentObj['elment'].style.display = ''; }
+                            else { v = v / -2; h = 0; }
+                        }
+                        elmentObj['elment'].style[brow['transform']] = (elmentObj['stopped']) ? '' : 'translateY(' + (-1 * h) + 'px)';
+                        elmentObj['h'] = h; elmentObj['v'] = v;
+                    }
+                });
+                var animationDone = true;
+                for (var i = 0; i < eObj.length; i++) if (!eObj[i]['stopped']) animationDone = false;
+                if (animationDone) clearInterval(intervalHandle);
+            }, interval);
+        }
+
+        // Returns number of pixels between an element and the top of the page
+        function pageOffsetTop(element) {
+            var pageOffsetTopHelper = function(elment) { return ((window.getComputedStyle(elment).position == 'static') ? 0 : elment.offsetTop + parseInt(window.getComputedStyle(elment).borderTopWidth)) + ((elment == document.body) ? 0 : pageOffsetTopHelper(elment.parentNode)); }
+            return pageOffsetTopHelper(element.parentNode) + element.offsetTop;
+        }
+
+        function parsePage(page) {
+            var responseHTML = {ready: 0, html: '', headElments: []};
+            var xmlhttp = new XMLHttpRequest();
+            xmlhttp.onreadystatechange = function() {
+                if (xmlhttp.readyState==4 && xmlhttp.status==200) {
+                    var pageHTML = xmlhttp.responseText;
+                    var bodyHTML;
+                    if (pageHTML.indexOf('<head') == pageHTML.indexOf('<body') == pageHTML.indexOf('<html') == -1) bodyHTML = pageHTML;
+                    else if (pageHTML.indexOf('<body') != -1) {
+                        var bodyStart = pageHTML.indexOf('>', pageHTML.indexOf('<body')) + 1;
+                        bodyHTML = pageHTML.substr(bodyStart, pageHTML.indexOf('<\/body', bodyStart) - bodyStart);
+
+                        if (pageHTML.indexOf('<head') != -1) {
+                            var headStart = pageHTML.indexOf('>', pageHTML.indexOf('<head')) + 1;
+                            var headHTML = pageHTML.substr(headStart, pageHTML.indexOf('<\/head', headStart) - headStart);
+                            while (headHTML.indexOf('<style') != -1) {
+                                var styleStart = headHTML.indexOf('>', headHTML.indexOf('<style')) + 1;
+                                var styleHTML = '';
+                                var selectors = (headHTML.substr(styleStart, headHTML.indexOf('<\/style', styleStart) - styleStart)).split('}');
+                                //Add a selector of #contentContainer before every selector
+                                if (selectors[selectors.length - 1].trim() == "") selectors = selectors.splice(0, selectors.length - 1);
+                                for (var i = 0; i < selectors.length; i++)
+                                    styleHTML += "\n#contentContainer " + (selectors[i] + '}').trim();
+                                styleHTML += "\n";
+                                //Remove this style from input head
+                                headHTML = headHTML.substr(0, headHTML.indexOf('<style')) + headHTML.substr(headHTML.indexOf('>', headHTML.indexOf('<\/style', styleStart)) + 1, headHTML.length);
+                                var style = document.createElement('style'); style.innerHTML = styleHTML; style.classList.add(page + 'specific');
+                                responseHTML['headElments'].push(style);
+                            }
+                            while (headHTML.indexOf('<script') != -1) {
+                                var scriptStart = headHTML.indexOf('>', headHTML.indexOf('<\script')) + 1;
+                                var scriptHTML = ('a' + headHTML.substr(scriptStart, headHTML.indexOf("\<\/script", scriptStart) - scriptStart)).trim().substr(1) + "\n";
+                                headHTML = headHTML.substr(0, headHTML.indexOf('<script')) + headHTML.substr(headHTML.indexOf('>', headHTML.indexOf('<\/script', scriptStart)) + 1, headHTML.length);
+                                var script = document.createElement('script'); script.innerHTML = scriptHTML; script.classList.add(page + 'specific');
+                                responseHTML['headElments'].push(script);
+                            }
+                        }
+                    }
+
+                    if (bodyHTML) {
+                        responseHTML['ready'] = 1;
+                        responseHTML['html'] = bodyHTML;
+                    }
+                } else if (xmlhttp.readyState == 4 && xmlhttp.status == 404) {
+                    responseHTML['ready'] = 1;
+                    responseHTML['html'] = '';
+                }
+            };
+            xmlhttp.open("GET", page, true);
+            xmlhttp.send();
+            return responseHTML;
+        }
+
+        function spin(elment, axis, angle) {
+            axis = axis || 'rotateY';
+            angle = angle || 0;
+            elment.style[brow['transform']] = axis + "(" + angle + "deg)";
+            window.setTimeout(function() {spin(elment, axis, (angle + 5) % 360)}, 20);
+        }
+
+        function getQueryVariable(variable) {
+            var query = window.location.search.substring(1);
+            var vars = query.split('&');
+            for (var i = 0; i < vars.length; i++) {
+                var pair = vars[i].split('=');
+                if (decodeURIComponent(pair[0]) == variable)
+                    return decodeURIComponent(pair[1]);
+            }
+            return '';
+        }
+
+        function computeTextWidth(str, fontSize, fontFamily) {
+            var text = document.createElement('span');
+            text.innerHTML = str; text.style.fontSize = fontSize + "px";
+            text.style.fontFamily = fontFamily || '';
+            document.body.appendChild(text);
+            var ret = text.offsetWidth;
+            document.body.removeChild(text);
+            return ret;
+        }
+
+        /*function getBaselineOffset(fontSize, fontFamily) {
+            var measure = document.createElement('div'); var letter = document.createElement('span'); var struct = document.createElement('span');
+            measure.style.height = fontSize + "px";
+            letter.innerHTML = 'T'; letter.style.fontSize = fontSize;
+            letter.style.fontFamily = fontFamily || '';
+            struct.style.display = 'inline';
+            measure.appendChild(letter); measure.appendChild(struct);
+            document.body.appendChild(measure);
+            var ret = (letter.offsetHeight - measure.offsetHeight) * 2;
+            document.body.removeChild(measure);
+            return ret;
+        }*/
+    </script>
+</head>
+<body onload="init(); update();" onresize="update();">
+    <!--<header>
+        <ul id="tabs">
+            <li><button id="aboutMe" onclick="loadPage('#AboutMe');">About Me</button></li>
+            <li><button id="portfolio" onclick="loadPage('#Portfolio');">Portfolio</button></li>
+            <li><button id="hireMe" onclick="loadPage('#HireMe');">Hire Me</button></li>
+        </ul>
+    </header>-->
+    <div id="entryText">
+        <span id="welcome">Welc<span id="welcO"><canvas></canvas></span>me</span>
+        <span id="enter">Enter</span>
+    </div>
+    <section id="contentContainer"></section>
+</body>
+</html>
