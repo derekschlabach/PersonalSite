@@ -1,0 +1,46 @@
+* {
+	margin: 0;
+}
+
+.board-wrapper {
+	text-align: center;
+}
+
+.board {
+	border : 1px solid black;
+	display: inline-block;
+
+	.row {
+		.square {
+			display: inline-block;
+			width: 75px;
+			height: 75px;
+			vertical-align: top;
+			position: relative;
+			box-sizing: border-box;
+
+			&.square-color-0 {
+				background: #ffce9e;
+			}
+
+			&.square-color-1 {
+				background: #d18b47;
+			}
+
+			&.allowed {
+				background: lightblue !important;
+				border: 1px solid black;
+			}
+
+			.piece {
+				margin: 0;
+				width: 80%;
+				height: 80%;
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				transform: translate(-50%, -50%);
+			}
+		}
+	}
+}
