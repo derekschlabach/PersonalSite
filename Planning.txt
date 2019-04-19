@@ -1,0 +1,49 @@
+
+## User Stories ##
+
+* As a student, I'd like to reserve a room for 2 hours in the library so that I am guaranteed a place to study.
+
+* As a club president, I'd like to reserve a room from 2 - 5pm every monday in order to host my club.
+
+* As a [school planner] (find a better title), I'd like to administer (set name, location, availability, etc.) rooms so that other users can reserve them
+
+
+## Users ##
+
+Type: Users
+  Actions:
+  	* Create Reservation(Room Id, Start Time, End Time)
+  	* Update My Reservation(Reservation Id, Start Time, End Time)
+  	* Delete My Reservation(Reservation Id)
+
+Type: Admin
+	Actions:
+  	* Reserve(Room Id, Start Time, End Time)
+  	* Upload FloorPlan
+  	* Create/Batch Create Room(s)
+  		* Should rooms exist that aren't associated to a floorplan?
+  	* Tag FloorPlan (Associate FloorPlan to building)
+  	* Label FloorPlan (Associate rooms to FloorPlan)
+  		* This should be automatable for customer experience
+  			1. Maybe floorplans are uploaded pre-labeled?
+  			2. Maybe we auto-discover rooms in floorplans & suggest them?
+
+## Topology ##
+  * Building
+    * Floor
+      * Room
+
+## Experience Designs ##
+	### Topology View ###
+	Scenario 1: Reserve room 301 in the Miriam Building on floor 3 for 1 hour
+		1. Go to proxima.xxxx.edu
+		2. Select Miriam Building
+		3. Select Floor 3
+		4. Select Room 301
+		5. 
+
+	### Search View ###
+	Scenario 2: Reserve any room in the library for 2 people for 1 hour
+
+	### Recurring Action? ### (This applies to both topology & search view)
+	Scenario 3: Reserve room 302 in the Miriam Building on floor 3 from 8:00 - 9:15 every MWF for 6 months

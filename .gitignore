@@ -3,3 +3,5 @@ Icon?
 test.html
 .idea
 .gitignore
+.cache
+node_modules

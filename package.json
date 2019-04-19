@@ -1,0 +1,24 @@
+{
+  "name": "proxima",
+  "private": true,
+  "description": "Proxima",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {
+    "build": "gatsby build",
+    "develop": "gatsby develop",
+    "format": "prettier --write src/**/*.{js,jsx}",
+    "start": "npm run develop",
+    "serve": "gatsby serve",
+    "test": "echo \"Write tests! -> https://gatsby.dev/unit-testing\""
+  },
+  "dependencies": {
+    "gatsby": "^2.3.3",
+    "react": "^16.8.5",
+    "react-dom": "^16.8.5",
+    "react-tabs": "^3.0.0"
+  },
+  "devDependencies": {
+    "prettier": "^1.16.4"
+  }
+}
