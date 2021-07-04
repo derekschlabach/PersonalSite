@@ -16,7 +16,7 @@ var turn = 0;
 var selected = null;
 
 [ 'Piece', 'Pawn', 'Rook', 'Knight', 'Bishop', 'Queen', 'King' ].forEach( function( name ) {
-	includeJS( 'js/Pieces/' + name + '.js' );
+	includeJS( '/js/Pieces/' + name + '.js' );
 });
 
 $( document ).ready( function() {
