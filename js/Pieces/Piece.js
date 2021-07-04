@@ -5,7 +5,7 @@ function Piece( color, square ) {
 	this.moves = 0;
 	this.dom = document.createElement( 'img' );
 	this.dom.classList.add( 'piece' );
-	this.dom.src = 'img/Pieces/' + color.toUpperCase() + this.name + '.png';
+	this.dom.src = '/img/Pieces/' + color.toUpperCase() + this.name + '.png';
 
 	this.getAllowedMoves = function( board ) {
 		throw "Unimplemented Function: getAllowedMoves";
